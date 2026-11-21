@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#edf4f4">
+<title>通院・治療経過ノート</title>
+
+<style>
+  :root {
+    color-scheme: light;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+      "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    --bg: #edf4f4;
+    --card: #fff;
+    --text: #203538;
+    --muted: #5d7274;
+    --line: #d5e3e3;
+    --accent: #176c72;
+    --soft: #e2f1f0;
+    --danger: #a33d38;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+
+  .wrap { max-width: 900px; margin: auto; padding: 16px; }
+  h1 { font-size: 1.4rem; margin: 8px 0 2px; }
+  h2 { font-size: 1.12rem; margin: 0 0 12px; }
+  h3 { font-size: 1rem; margin: 18px 0 8px; }
+  p { margin: 8px 0; }
+  .muted, small { color: var(--muted); }
+  .sub { color: var(--muted); font-size: .87rem; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    margin: 12px 0;
+    box-shadow: 0 8px 24px rgba(31, 64, 67, .06);
+  }
+
+  .notice {
+    background: #fff6df;
+    border: 1px solid #eed69a;
+    border-radius: 12px;
+    padding: 12px;
+    margin: 12px 0;
+    font-size: .87rem;
+  }
+
+  .status {
+    background: var(--soft);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 10px 0;
+    overflow-wrap: anywhere;
+    font-size: .9rem;
+  }
+
+  .status.error { background: #fff0ee; color: #81322e; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .between { justify-content: space-between; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+  @media (min-width: 650px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  label { display: block; font-weight: 600; font-size: .9rem; }
+
+  input, textarea, select, button {
+    font: inherit;
+  }
+
+  input, textarea, select {
+    display: block;
+    width: 100%;
+    margin: 5px 0 10px;
+    padding: 10px;
+    min-height: 44px;
+    border: 1px solid #b8cdce;
+    border-radius: 9px;
+    background: #fff;
+    color: var(--text);
+    font-size: 16px;
+  }
+
+  textarea { min-height: 76px; resize: vertical; }
+
+  button {
+    min-height: 44px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    padding: 9px 13px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button.secondary {
+    background: #fff;
+    color: var(--accent);
+    border-color: #a8c9c9;
+  }
+
+  button.danger {
+    background: #fff;
+    color: var(--danger);
+    border-color: #dfb8b5;
+  }
+
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .item {
+    border-top: 1px solid var(--line);
+    padding: 13px 0;
+    overflow-wrap: anywhere;
+  }
+
+  .item p { white-space: pre-wrap; }
+  .title { font-weight: 700; }
+
+  .tag {
+    display: inline-block;
+    background: var(--soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-weight: 700;
+  }
+
+  .chart {
+    background: #fbfdfd;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 70px;
+  }
+
+  .chart svg { display: block; width: 100%; height: auto; }
+  .chart .empty { padding: 12px; color: var(--muted); }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 7px; }
+
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: #f4f8f8;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: .8rem;
+  }
+
+  .nav {
+    position: fixed;
+    z-index: 10;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: rgba(255,255,255,.97);
+    border-top: 1px solid var(--line);
+    padding: 5px max(8px, env(safe-area-inset-right))
+      calc(5px + env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+  }
+
+  .nav button {
+    background: transparent;
+    color: var(--muted);
+    padding: 7px 2px;
+    font-size: .82rem;
+  }
+
+  .nav button.active { background: var(--soft); color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <header>
+    <h1>通院・治療経過ノート</h1>
+    <p class="sub">iPhoneのブラウザに保存します。定期的にJSONをバックアップしてください。</p>
+  </header>
+
+  <div class="notice">
+    <strong>プライバシー：</strong>
+    このアプリにログイン機能はありません。公開リポジトリに実データを置くと、
+    URLを知る人以外にも公開される可能性があります。端末内保存は暗号化保管庫ではありません。
+  </div>
+
+  <div id="message" class="status" role="status" aria-live="polite">読み込み中…</div>
+
+  <main>
+    <section id="page-records">
+      <div class="card">
+        <h2>次回予約</h2>
+        <div id="next-visit"></div>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h2>通院タイムライン</h2>
+          <button type="button" id="new-record">＋ 通院記録</button>
+        </div>
+
+        <form id="record-form" hidden>
+          <h3 id="record-title"></h3>
+          <div class="grid">
+            <label>受診日
+              <input name="date" type="date" required>
+            </label>
+            <label>医療機関
+              <input name="facility" maxlength="200" required>
+            </label>
+            <label>診療科
+              <input name="department" maxlength="200">
+            </label>
+            <label>次回予約日
+              <input name="nextVisit" type="date">
+            </label>
+          </div>
+          <label>受診目的
+            <textarea name="purpose"></textarea>
+          </label>
+          <label>処方・処置
+            <textarea name="treatment"></textarea>
+          </label>
+          <label>メモ
+            <textarea name="memo"></textarea>
+          </label>
+          <div class="row">
+            <button type="submit">端末に保存</button>
+            <button type="button" class="secondary" id="cancel-record">キャンセル</button>
+          </div>
+        </form>
+
+        <div id="records-list"></div>
+      </div>
+    </section>
+
+    <section id="page-vitals" hidden>
+      <div class="card">
+        <div class="row between">
+          <h2>検査値・バイタル</h2>
+          <button type="button" id="new-vital">＋ 数値を記録</button>
+        </div>
+
+        <form id="vital-form" hidden>
+          <h3 id="vital-title"></h3>
+          <div class="grid">
+            <label>日付
+              <input name="date" type="date" required>
+            </label>
+            <label>項目名
+              <input name="name" maxlength="200" placeholder="例：HbA1c" required>
+            </label>
+            <label>数値
+              <input name="value" type="number" step="any" required>
+            </label>
+            <label>単位
+              <input name="unit" maxlength="100" placeholder="例：%">
+            </label>
+          </div>
+          <div class="row">
+            <button type="submit">端末に保存</button>
+            <button type="button" class="secondary" id="cancel-vital">キャンセル</button>
+          </div>
+        </form>
+
+        <label style="margin-top:14px">グラフの項目
+          <select id="vital-series"></select>
+        </label>
+        <p class="sub">同じ項目名でも単位が異なる場合は別系列です。</p>
+        <div id="vital-chart" class="chart"></div>
+        <div id="vitals-list"></div>
+      </div>
+    </section>
+
+    <section id="page-health" hidden>
+      <div class="card">
+        <h2>健康データ：直近90日</h2>
+        <p class="sub">
+          今日を含む90日間を表示します。欠測日はゼロにせず、欠測区間の線を切ります。
+          同日の複数測定はすべて表示します。
+        </p>
+        <div id="health-status" class="status"></div>
+        <label>health.jsonをファイルから読み込む
+          <input id="health-file" type="file" accept=".json,application/json">
+        </label>
+        <p class="sub">
+          現在の健康データを置き換えます。GitHubからの取得は設定画面にあります。
+        </p>
+
+        <h3>体重 kg</h3>
+        <div id="weight-chart" class="chart"></div>
+        <div id="weight-table"></div>
+
+        <h3>歩数</h3>
+        <div id="steps-chart" class="chart"></div>
+        <div id="steps-table"></div>
+
+        <h3>血圧 mmHg</h3>
+        <p class="sub">青：収縮期／緑：拡張期</p>
+        <div id="bp-chart" class="chart"></div>
+        <div id="bp-table"></div>
+      </div>
+    </section>
+
+    <section id="page-settings" hidden>
+      <div class="card">
+        <h2>バックアップと復元</h2>
+        <p>
+          通院記録・検査値・健康データをJSONに書き出します。
+          PATとGitHub設定は含まれません。ファイルの共有設定に注意してください。
+        </p>
+        <div class="row">
+          <button type="button" id="export-backup">バックアップを書き出す</button>
+          <button type="button" class="secondary" id="export-raw">
+            保存領域の生データを退避
+          </button>
+        </div>
+        <p class="sub">
+          生データの退避は、保存データの読み込みエラー時に調査用として使います。
+          通常の復元ファイルとは形式が異なります。
+        </p>
+        <label>バックアップから復元
+          <input id="backup-file" type="file" accept=".json,application/json">
+        </label>
+        <p class="sub">
+          復元は現在のデータを全置換します。復元前にもバックアップしてください。
+          ダウンロード後は「ファイル」アプリで保存先を確認してください。
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>GitHub連携 <small>任意</small></h2>
+        <p class="sub">
+          PATはこのブラウザのlocalStorageに保存されます。
+          Fine-grained PATを対象リポジトリに限定し、Contentsの読み書き権限を付与してください。
+        </p>
+
+        <form id="github-form">
+          <div class="grid">
+            <label>リポジトリ（owner/repository）
+              <input name="repo" placeholder="例：user/private-data"
+                autocapitalize="none" autocomplete="off" spellcheck="false">
+            </label>
+            <label>ブランチ
+              <input name="branch" value="main"
+                autocapitalize="none" autocomplete="off" spellcheck="false">
+            </label>
+            <label>app.jsonのパス
+              <input name="appPath" value="data/app.json"
+                autocapitalize="none" autocomplete="off" spellcheck="false">
+            </label>
+            <label>health.jsonのパス
+              <input name="healthPath" value="data/health.json"
+                autocapitalize="none" autocomplete="off" spellcheck="false">
+            </label>
+          </div>
+          <label>Fine-grained PAT
+            <input name="token" type="password" autocomplete="off"
+              autocapitalize="none" spellcheck="false">
+          </label>
+          <div class="row">
+            <button type="submit">設定を保存</button>
+            <button type="button" class="secondary" id="delete-token">PATを削除</button>
+          </div>
+        </form>
+
+        <div id="sync-status" class="status"></div>
+        <div class="row">
+          <button type="button" class="secondary net" id="github-load">
+            GitHubからapp.jsonを取得
+          </button>
+          <button type="button" class="net" id="github-save">
+            GitHubへapp.jsonを同期
+          </button>
+          <button type="button" class="secondary net" id="github-health">
+            GitHubからhealth.jsonを取得
+          </button>
+        </div>
+        <p class="sub">
+          app.jsonの取得は端末内の通院記録・検査値を置き換えます。
+          同期基準のない既存ファイルには、誤上書き防止のためPUTしません。
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>ヘルスケア自動同期の設定手順</h2>
+        <p class="sub">Markdown形式のガイドです。</p>
+        <pre id="guide"></pre>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="nav" aria-label="画面切り替え">
+  <button type="button" data-page="records" class="active" aria-current="page">通院</button>
+  <button type="button" data-page="vitals">検査値</button>
+  <button type="button" data-page="health">健康</button>
+  <button type="button" data-page="settings">設定</button>
+</nav>
+
+<script>
+(() => {
+  "use strict";
+
+  const STORE = "medical-note-state-v1";
+  const CONFIG = "medical-note-github-v1";
+  const API = "https://api.github.com";
+  const $ = id => document.getElementById(id);
+
+  const emptyHealth = () => ({
+    weight: [],
+    steps: [],
+    bloodPressure: []
+  });
+
+  const emptyApp = () => ({
+    records: [],
+    vitals: [],
+    health: emptyHealth()
+  });
+
+  const emptyState = () => ({
+    app: emptyApp(),
+    health: emptyHealth(),
+    healthFetched: null,
+    syncKey: null,
+    sha: null,
+    syncedText: null
+  });
+
+  const defaultConfig = () => ({
+    repo: "",
+    branch: "main",
+    appPath: "data/app.json",
+    healthPath: "data/health.json",
+    token: ""
+  });
+
+  let state = emptyState();
+  let config = defaultConfig();
+  let storageReady = true;
+  let busy = false;
+  let recordEdit = null;
+  let vitalEdit = null;
+
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const isObject = value =>
+    value !== null && typeof value === "object" && !Array.isArray(value);
+  const string = value => typeof value === "string" ? value : "";
+
+  function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[ch]));
+  }
+
+  function say(message, error = false) {
+    $("message").textContent = message;
+    $("message").classList.toggle("error", error);
+  }
+
+  function localToday() {
+    const d = new Date();
+    return [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0")
+    ].join("-");
+  }
+
+  function validDate(value) {
+    if (typeof value !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [y, m, d] = value.split("-").map(Number);
+    if (y < 100) return false;
+    const date = new Date(Date.UTC(y, m - 1, d));
+    return date.getUTCFullYear() === y &&
+      date.getUTCMonth() === m - 1 &&
+      date.getUTCDate() === d;
+  }
+
+  function dayNumber(value) {
+    const [y, m, d] = value.split("-").map(Number);
+    return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+  }
+
+  function dateFromDay(number) {
+    return new Date(number * 86400000).toISOString().slice(0, 10);
+  }
+
+  function normalizeHealth(input) {
+    if (!isObject(input)) throw new Error("健康データはJSONオブジェクトにしてください。");
+
+    const result = clone(input);
+    for (const key of ["weight", "steps", "bloodPressure"]) {
+      if (result[key] === undefined) result[key] = [];
+      if (!Array.isArray(result[key])) throw new Error(`${key}は配列にしてください。`);
+    }
+
+    const finite = n => typeof n === "number" && Number.isFinite(n);
+
+    for (const p of result.weight) {
+      if (!isObject(p) || !validDate(p.date) || !finite(p.kg)) {
+        throw new Error("体重には正しいdateと数値kgが必要です。");
+      }
+    }
+
+    for (const p of result.steps) {
+      if (!isObject(p) || !validDate(p.date) || !finite(p.count)) {
+        throw new Error("歩数には正しいdateと数値countが必要です。");
+      }
+    }
+
+    for (const p of result.bloodPressure) {
+      if (!isObject(p) || !validDate(p.date) ||
+          !finite(p.systolic) || !finite(p.diastolic)) {
+        throw new Error("血圧にはdate、数値systolic、数値diastolicが必要です。");
+      }
+    }
+
+    return result;
+  }
+
+  function normalizeApp(input) {
+    if (!isObject(input) ||
+        !Array.isArray(input.records) ||
+        !Array.isArray(input.vitals)) {
+      throw new Error("app.jsonにはrecords配列とvitals配列が必要です。");
+    }
+
+    const result = clone(input);
+
+    if (result.health === undefined) result.health = emptyHealth();
+    if (!isObject(result.health)) {
+      throw new Error("app.jsonのhealthはオブジェクトにしてください。");
+    }
+
+    for (const r of result.records) {
+      if (!isObject(r) || !validDate(r.date) ||
+          typeof r.facility !== "string") {
+        throw new Error("通院記録の日付または医療機関が不正です。");
+      }
+
+      for (const key of ["department", "purpose", "treatment", "nextVisit", "memo"]) {
+        if (r[key] !== undefined && typeof r[key] !== "string") {
+          throw new Error(`通院記録の${key}が不正です。`);
+        }
+      }
+
+      if (r.nextVisit && !validDate(r.nextVisit)) {
+        throw new Error("次回予約の日付が不正です。");
+      }
+    }
+
+    for (const v of result.vitals) {
+      if (!isObject(v) || !validDate(v.date) ||
+          typeof v.name !== "string" || !v.name.trim() ||
+          typeof v.value !== "number" || !Number.isFinite(v.value) ||
+          (v.unit !== undefined && typeof v.unit !== "string")) {
+        throw new Error("検査値の日付・項目名・数値・単位が不正です。");
+      }
+    }
+
+    return result;
+  }
+
+  function persist(next, allowRecovery = false) {
+    if (!storageReady && !allowRecovery) {
+      throw new Error("保存データの読み込みに失敗しているため編集できません。");
+    }
+
+    try {
+      localStorage.setItem(STORE, JSON.stringify(next));
+    } catch (_) {
+      throw new Error("端末内に保存できません。空き容量やSafariの設定を確認してください。");
+    }
+
+    state = next;
+    storageReady = true;
+  }
+
+  function saveConfig(next) {
+    try {
+      localStorage.setItem(CONFIG, JSON.stringify(next));
+    } catch (_) {
+      throw new Error("GitHub設定を端末内に保存できません。");
+    }
+    config = next;
+  }
+
+  function loadInitial() {
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!isObject(parsed)) throw new Error("保存形式が不正です。");
+
+        state = {
+          ...emptyState(),
+          ...parsed,
+          app: normalizeApp(parsed.app),
+          health: normalizeHealth(parsed.health || emptyHealth())
+        };
+      }
+    } catch (e) {
+      storageReady = false;
+      say(
+        "保存済みデータを読み込めません。編集を停止しました。「設定」で生データを退避し、" +
+        "バックアップから復元してください。 " + e.message,
+        true
+      );
+    }
+
+    try {
+      const raw = localStorage.getItem(CONFIG);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!isObject(parsed)) throw new Error("設定形式が不正です。");
+        const candidate = { ...defaultConfig(), ...parsed };
+        for (const key of Object.keys(defaultConfig())) {
+          if (typeof candidate[key] !== "string") throw new Error("設定形式が不正です。");
+        }
+        config = candidate;
+      }
+    } catch (_) {
+      config = defaultConfig();
+      if (storageReady) {
+        say("GitHub設定を読み込めません。必要なら再設定してください。", true);
+      }
+    }
+  }
+
+  function ensureEditable() {
+    if (busy) throw new Error("GitHub通信中です。完了後に操作してください。");
+    if (!storageReady) throw new Error("保存データの読み込みエラーを先に解決してください。");
+  }
+
+  function cancelForms() {
+    $("record-form").hidden = true;
+    $("vital-form").hidden = true;
+    recordEdit = null;
+    vitalEdit = null;
+  }
+
+  function showPage(page) {
+    for (const name of ["records", "vitals", "health", "settings"]) {
+      $(`page-${name}`).hidden = name !== page;
+    }
+    document.querySelectorAll(".nav button").forEach(button => {
+      const active = button.dataset.page === page;
+      button.classList.toggle("active", active);
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
+    window.scrollTo(0, 0);
+  }
+
+  function renderNextVisit() {
+    const today = localToday();
+    const candidates = state.app.records
+      .filter(r => r.nextVisit && r.nextVisit >= today)
+      .slice()
+      .sort((a, b) => a.nextVisit.localeCompare(b.nextVisit));
+
+    if (!candidates.length) {
+      $("next-visit").textContent = "今日以降の予約はありません。";
+      return;
+    }
+
+    const r = candidates[0];
+    const days = dayNumber(r.nextVisit) - dayNumber(today);
+    const label = days === 0 ? "今日" : `あと ${days} 日`;
+
+    $("next-visit").innerHTML =
+      `<span class="tag">${escapeHTML(label)}</span>` +
+      `<p>${escapeHTML(r.nextVisit)}　${escapeHTML(r.facility)}` +
+      `${r.department ? "・" + escapeHTML(r.department) : ""}</p>` +
+      `${candidates[1] && candidates[1].nextVisit === r.nextVisit
+        ? '<p class="sub">同日にほかの予約もあります。</p>' : ""}`;
+  }
+
+  function renderRecords() {
+    const records = state.app.records
+      .map((value, index) => ({ value, index }))
+      .sort((a, b) =>
+        b.value.date.localeCompare(a.value.date) || b.index - a.index);
+
+    if (!records.length) {
+      $("records-list").innerHTML = '<p class="sub">通院記録はまだありません。</p>';
+      return;
+    }
+
+    $("records-list").innerHTML = records.map(({ value: r, index }) => {
+      const fields = [
+        ["受診目的", r.purpose],
+        ["処方・処置", r.treatment],
+        ["次回予約", r.nextVisit],
+        ["メモ", r.memo]
+      ];
+
+      return `
+        <article class="item">
+          <div class="title">${escapeHTML(r.date)}　
+            ${escapeHTML(r.facility)}${r.department ? "・" + escapeHTML(r.department) : ""}
+          </div>
+          ${fields.filter(([, value]) => value)
+            .map(([label, value]) =>
+              `<p>${escapeHTML(label)}：${escapeHTML(value)}</p>`).join("")}
+          <div class="row">
+            <button type="button" class="secondary" data-edit-record="${index}">編集</button>
+            <button type="button" class="danger" data-delete-record="${index}">削除</button>
+          </div>
+        </article>`;
+    }).join("");
+  }
+
+  function openRecord(index = null) {
+    try {
+      ensureEditable();
+      recordEdit = index;
+      const form = $("record-form");
+      form.reset();
+
+      const value = index === null
+        ? { date: localToday() }
+        : state.app.records[index];
+
+      for (const key of [
+        "date", "facility", "department", "purpose",
+        "treatment", "nextVisit", "memo"
+      ]) {
+        form.elements[key].value = string(value[key]);
+      }
+
+      $("record-title").textContent =
+        index === null ? "通院記録を追加" : "通院記録を編集";
+      form.hidden = false;
+      form.scrollIntoView({ block: "start" });
+    } catch (e) {
+      say(e.message, true);
+    }
+  }
+
+  function saveRecord(event) {
+    event.preventDefault();
+
+    try {
+      ensureEditable();
+      const form = event.currentTarget;
+      const item = recordEdit === null
+        ? {}
+        : clone(state.app.records[recordEdit]);
+
+      for (const key of [
+        "date", "facility", "department", "purpose",
+        "treatment", "nextVisit", "memo"
+      ]) {
+        item[key] = form.elements[key].value.trim();
+      }
+
+      if (!validDate(item.date) || !item.facility ||
+          (item.nextVisit && !validDate(item.nextVisit))) {
+        throw new Error("受診日、医療機関、次回予約日を確認してください。");
+      }
+
+      const next = clone(state);
+      if (recordEdit === null) next.app.records.push(item);
+      else next.app.records[recordEdit] = item;
+
+      persist(next);
+      cancelForms();
+      renderAll();
+      say("通院記録を端末内に保存しました。");
+    } catch (e) {
+      say(e.message, true);
+    }
+  }
+
+  function openVital(index = null) {
+    try {
+      ensureEditable();
+      vitalEdit = index;
+      const form = $("vital-form");
+      form.reset();
+
+      const value = index === null
+        ? { date: localToday() }
+        : state.app.vitals[index];
+
+      for (const key of ["date", "name", "value", "unit"]) {
+        form.elements[key].value =
+          value[key] === undefined ? "" : String(value[key]);
+      }
+
+      $("vital-title").textContent =
+        index === null ? "数値を追加" : "数値を編集";
+      form.hidden = false;
+      form.scrollIntoView({ block: "start" });
+    } catch (e) {
+      say(e.message, true);
+    }
+  }
+
+  function saveVital(event) {
+    event.preventDefault();
+
+    try {
+      ensureEditable();
+      const form = event.currentTarget;
+      const item = vitalEdit === null
+        ? {}
+        : clone(state.app.vitals[vitalEdit]);
+
+      item.date = form.elements.date.value;
+      item.name = form.elements.name.value.trim();
+      item.unit = form.elements.unit.value.trim();
+      const raw = form.elements.value.value;
+      item.value = Number(raw);
+
+      if (!validDate(item.date) || !item.name ||
+          raw === "" || !Number.isFinite(item.value)) {
+        throw new Error("日付、項目名、数値を確認してください。");
+      }
+
+      const next = clone(state);
+      if (vitalEdit === null) next.app.vitals.push(item);
+      else next.app.vitals[vitalEdit] = item;
+
+      persist(next);
+      cancelForms();
+      renderAll();
+      say("検査値を端末内に保存しました。");
+    } catch (e) {
+      say(e.message, true);
+    }
+  }
+
+  function deleteItem(kind, index) {
+    try {
+      ensureEditable();
+      if (!confirm("この記録を削除しますか？")) return;
+
+      const next = clone(state);
+      next.app[kind].splice(index, 1);
+      persist(next);
+      cancelForms();
+      renderAll();
+      say("削除して端末内に保存しました。");
+    } catch (e) {
+      say(e.message, true);
+    }
+  }
+
+  function drawChart(id, series, options = {}) {
+    const target = $(id);
+    const points = series.flatMap(s => s.points);
+
+    if (!points.length) {
+      target.innerHTML = '<div class="empty">表示できるデータがありません。</div>';
+      return;
+    }
+
+    const width = 640;
+    const height = 220;
+    const left = 64;
+    const right = 18;
+    const top = 18;
+    const bottom = 35;
+
+    const values = points.map(p => p.value);
+    let minY = Math.min(...values);
+    let maxY = Math.max(...values);
+
+    if (minY === maxY) {
+      const pad = Math.max(Math.abs(minY) * .05, 1);
+      minY -= pad;
+      maxY += pad;
+    } else {
+      const pad = (maxY - minY) * .08;
+      minY -= pad;
+      maxY += pad;
+    }
+
+    let minX = options.start
+      ? dayNumber(options.start)
+      : Math.min(...points.map(p => dayNumber(p.date)));
+
+    let maxX = options.end
+      ? dayNumber(options.end)
+      : Math.max(...points.map(p => dayNumber(p.date)));
+
+    if (minX === maxX) {
+      minX -= 1;
+      maxX += 1;
+    }
+
+    const x = date =>
+      left + (dayNumber(date) - minX) / (maxX - minX) * (width - left - right);
+
+    const y = value =>
+      top + (maxY - value) / (maxY - minY) * (height - top - bottom);
+
+    let contents = "";
+
+    for (let i = 0; i <= 4; i++) {
+      const value = minY + (maxY - minY) * i / 4;
+      const yy = y(value);
+      const label = Number(value.toPrecision(4));
+
+      contents += `
+        <line x1="${left}" x2="${width - right}" y1="${yy}" y2="${yy}"
+          stroke="#dce8e8"/>
+        <text x="${left - 7}" y="${yy + 4}" text-anchor="end"
+          fill="#617679" font-size="11">${label}</text>`;
+    }
+
+    for (const s of series) {
+      const sorted = s.points.slice().sort((a, b) =>
+        a.date.localeCompare(b.date));
+
+      for (let i = 1; i < sorted.length; i++) {
+        const previous = sorted[i - 1];
+        const current = sorted[i];
+
+        if (options.breakGaps &&
+            dayNumber(current.date) - dayNumber(previous.date) > 1) {
+          continue;
+        }
+
+        contents += `
+          <line x1="${x(previous.date)}" y1="${y(previous.value)}"
+            x2="${x(current.date)}" y2="${y(current.value)}"
+            stroke="${s.color}" stroke-width="2.5"/>`;
+      }
+
+      for (const p of sorted) {
+        contents += `
+          <circle cx="${x(p.date)}" cy="${y(p.value)}" r="3.5" fill="${s.color}">
+            <title>${escapeHTML(p.date)}: ${escapeHTML(p.value)}</title>
+          </circle>`;
+      }
+    }
+
+    const dates = points.map(p => p.date).sort();
+    const first = options.start || dates[0];
+    const last = options.end || dates[dates.length - 1];
+
+    contents += `
+      <text x="${left}" y="${height - 10}" fill="#617679" font-size="11">
+        ${escapeHTML(first)}
+      </text>
+      <text x="${width - right}" y="${height - 10}" text-anchor="end"
+        fill="#617679" font-size="11">${escapeHTML(last)}</text>`;
+
+    target.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" role="img"
+        aria-label="${escapeHTML(options.label || "数値の推移")}">
+        ${contents}
+      </svg>`;
+  }
+
+  function renderVitals() {
+    const select = $("vital-series");
+    const previous = select.value;
+    const groups = new Map();
+
+    for (const v of state.app.vitals) {
+      const key = JSON.stringify([v.name, string(v.unit)]);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(v);
+    }
+
+    select.replaceChildren();
+
+    if (!groups.size) {
+      const option = document.createElement("option");
+      option.textContent = "項目がありません";
+      select.append(option);
+      select.disabled = true;
+    } else {
+      select.disabled = false;
+
+      for (const key of groups.keys()) {
+        const [name, unit] = JSON.parse(key);
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = unit ? `${name}（${unit}）` : name;
+        select.append(option);
+      }
+
+      if (groups.has(previous)) select.value = previous;
+    }
+
+    const selected = groups.get(select.value) || [];
+    drawChart("vital-chart", [{
+      color: "#176caa",
+      points: selected.map(v => ({ date: v.date, value: v.value }))
+    }], { label: "選択した検査値の推移" });
+
+    const vitals = state.app.vitals
+      .map((value, index) => ({ value, index }))
+      .sort((a, b) =>
+        b.value.date.localeCompare(a.value.date) || b.index - a.index);
+
+    $("vitals-list").innerHTML = vitals.length
+      ? vitals.map(({ value: v, index }) => `
+          <article class="item">
+            <div class="title">${escapeHTML(v.date)}　${escapeHTML(v.name)}</div>
+            <p>${escapeHTML(v.value)} ${escapeHTML(v.unit || "")}</p>
+            <div class="row">
+              <button type="button" class="secondary"
+                data-edit-vital="${index}">編集</button>
+              <button type="button" class="danger"
+                data-delete-vital="${index}">削除</button>
+            </div>
+          </article>`).join("")
+      : '<p class="sub">検査値はまだありません。</p>';
+  }
+
+  function renderTable(id, headers, rows) {
+    if (!rows.length) {
+      $(id).innerHTML = "";
+      return;
+    }
+
+    $(id).innerHTML = `
+      <details>
+        <summary>数値一覧（${rows.length}件）</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>${headers.map(h => `<th>${escapeHTML(h)}</th>`).join("")}</tr></thead>
+            <tbody>
+              ${rows.map(row =>
+                `<tr>${row.map(value => `<td>${escapeHTML(value)}</td>`).join("")}</tr>`
+              ).join("")}
+            </tbody>
+          </table>
+        </div>
+      </details>`;
+  }
+
+  function renderHealth() {
+    const end = localToday();
+    const start = dateFromDay(dayNumber(end) - 89);
+
+    const recent = items => items
+      .filter(p => p.date >= start && p.date <= end)
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    const weight = recent(state.health.weight);
+    const steps = recent(state.health.steps);
+    const bp = recent(state.health.bloodPressure);
+    const options = { start, end, breakGaps: true };
+
+    $("health-status").textContent = state.healthFetched
+      ? `最終読み込み：${state.healthFetched}`
+      : "健康データはまだ読み込まれていません。";
+
+    drawChart("weight-chart", [{
+      color: "#176caa",
+      points: weight.map(p => ({ date: p.date, value: p.kg }))
+    }], { ...options, label: "体重の90日間の推移" });
+
+    drawChart("steps-chart", [{
+      color: "#176caa",
+      points: steps.map(p => ({ date: p.date, value: p.count }))
+    }], { ...options, label: "歩数の90日間の推移" });
+
+    drawChart("bp-chart", [
+      {
+        color: "#176caa",
+        points: bp.map(p => ({ date: p.date, value: p.systolic }))
+      },
+      {
+        color: "#16836a",
+        points: bp.map(p => ({ date: p.date, value: p.diastolic }))
+      }
+    ], { ...options, label: "血圧の90日間の推移" });
+
+    renderTable("weight-table", ["日付", "体重 kg"],
+      weight.map(p => [p.date, p.kg]));
+
+    renderTable("steps-table", ["日付", "歩数"],
+      steps.map(p => [p.date, p.count]));
+
+    renderTable("bp-table", ["日付", "収縮期", "拡張期"],
+      bp.map(p => [p.date, p.systolic, p.diastolic]));
+  }
+
+  function configKey(c) {
+    return JSON.stringify([c.repo, c.branch, c.appPath]);
+  }
+
+  function renderSyncStatus() {
+    if (!config.token) {
+      $("sync-status").textContent = "GitHub未設定：端末内保存モードです。";
+      return;
+    }
+
+    if (state.syncKey !== configKey(config) || !state.sha ||
+        state.syncedText === null) {
+      $("sync-status").textContent =
+        "GitHub設定あり：この保存先との同期基準は未確立です。";
+      return;
+    }
+
+    $("sync-status").textContent =
+      JSON.stringify(state.app) === state.syncedText
+        ? "前回同期した内容と端末内の内容は一致しています。GitHub側の最新状態は未確認です。"
+        : "端末内にGitHub未同期の変更があります。";
+  }
+
+  function renderAll() {
+    renderNextVisit();
+    renderRecords();
+    renderVitals();
+    renderHealth();
+    renderSyncStatus();
+  }
+
+  function fillConfig() {
+    for (const key of Object.keys(defaultConfig())) {
+      $("github-form").elements[key].value = config[key];
+    }
+  }
+
+  function saveGithubConfig(event) {
+    event.preventDefault();
+
+    try {
+      if (busy) throw new Error("通信終了後に設定を変更してください。");
+
+      const form = event.currentTarget;
+      const next = {};
+
+      for (const key of Object.keys(defaultConfig())) {
+        next[key] = form.elements[key].value.trim();
+      }
+
+      next.branch ||= "main";
+      next.appPath ||= "data/app.json";
+      next.healthPath ||= "data/health.json";
+
+      if (next.repo && !/^[^/\s]+\/[^/\s]+$/.test(next.repo)) {
+        throw new Error("リポジトリはowner/repository形式で入力してください。");
+      }
+
+      if ([next.appPath, next.healthPath].some(
+        p => p.startsWith("/") || p.split("/").includes("..")
+      )) {
+        throw new Error("パスは / で始めず、.. を含めないでください。");
+      }
+
+      saveConfig(next);
+      fillConfig();
+      renderSyncStatus();
+      say("GitHub設定を端末内に保存しました。");
+    } catch (e) {
+      say(e.message, true);
+    }
+  }
+
+  function validateConfig() {
+    if (!config.repo ||
+        !/^[^/\s]+\/[^/\s]+$/.test(config.repo) ||
+        !config.branch || !config.appPath || !config.healthPath ||
+        !config.token) {
+      throw new Error("リポジトリ、ブランチ、パス、PATを設定・保存してください。");
+    }
+    return clone(config);
+  }
+
+  function contentsURL(c, path) {
+    const [owner, repo] = c.repo.split("/");
+    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+    return `${API}/repos/${encodeURIComponent(owner)}` +
+      `/${encodeURIComponent(repo)}/contents/${encodedPath}`;
+  }
+
+  function headers(c) {
+    return {
+      "Accept": "application/vnd.github+json",
+      "Authorization": `Bearer ${c.token}`,
+      "X-GitHub-Api-Version": "2022-11-28"
+    };
+  }
+
+  function encodeBase64UTF8(value) {
+    const bytes = new TextEncoder().encode(value);
+    let binary = "";
+
+    for (let i = 0; i < bytes.length; i += 8192) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    }
+
+    return btoa(binary);
+  }
+
+  function decodeBase64UTF8(value) {
+    const binary = atob(value.replace(/\s/g, ""));
+    const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  }
+
+  async function readContents(c, path) {
+    const url = `${contentsURL(c, path)}?ref=${encodeURIComponent(c.branch)}`;
+    const response = await fetch(url, {
+      headers: headers(c),
+      cache: "no-store"
+    });
+
+    if (response.status === 404) return { missing: true };
+    if (!response.ok) throw new Error(`GitHub GET失敗：HTTP ${response.status}`);
+
+    const data = await response.json();
+
+    if (!isObject(data) || data.type !== "file" ||
+        typeof data.sha !== "string" ||
+        data.encoding !== "base64" ||
+        typeof data.content !== "string" || !data.content) {
+      throw new Error(
+        "ファイル内容を取得できません。パス、権限、ファイルサイズを確認してください。"
+      );
+    }
+
+    return {
+      missing: false,
+      sha: data.sha,
+      content: decodeBase64UTF8(data.content)
+    };
+  }
+
+  async function putContents(c, path, body) {
+    const response = await fetch(contentsURL(c, path), {
+      method: "PUT",
+      headers: {
+        ...headers(c),
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (response.status === 409 || response.status === 422) {
+      throw new Error(
+        `GitHub PUT失敗：HTTP ${response.status}。` +
+        "SHA競合または入力・権限の問題です。端末内データを退避して確認してください。"
+      );
+    }
+
+    if (!response.ok) throw new Error(`GitHub PUT失敗：HTTP ${response.status}`);
+
+    const result = await response.json();
+
+    if (!result.content || typeof result.content.sha !== "string") {
+      throw new Error("PUT結果のSHAを確認できません。GitHub側を確認してください。");
+    }
+
+    return result.content.sha;
+  }
+
+  async function network(task) {
+    if (busy) return;
+    if (!storageReady) {
+      say("保存データの読み込みエラーを先に解決してください。", true);
+      return;
+    }
+
+    busy = true;
+    document.querySelectorAll(".net").forEach(button => {
+      button.disabled = true;
+    });
+
+    try {
+      await task();
+    } catch (e) {
+      say(e.message || "通信に失敗しました。", true);
+    } finally {
+      busy = false;
+      document.querySelectorAll(".net").forEach(button => {
+        button.disabled = false;
+      });
+      renderSyncStatus();
+    }
+  }
+
+  async function loadAppFromGithub() {
+    await network(async () => {
+      const c = validateConfig();
+
+      if (!confirm(
+        "GitHubのapp.jsonで端末内の通院記録・検査値を置き換えます。" +
+        "先にバックアップしましたか？"
+      )) return;
+
+      say("GitHubからapp.jsonを取得中…");
+      const remote = await readContents(c, c.appPath);
+
+      if (remote.missing) {
+        throw new Error(
+          "app.jsonが見つかりません。404はパス・ブランチ・権限の問題でも発生します。"
+        );
+      }
+
+      const app = normalizeApp(JSON.parse(remote.content));
+      const next = clone(state);
+      next.app = app;
+      next.syncKey = configKey(c);
+      next.sha = remote.sha;
+      next.syncedText = JSON.stringify(app);
+
+      persist(next);
+      cancelForms();
+      renderAll();
+      say("GitHubのapp.jsonを取得し、端末内に保存しました。");
+    });
+  }
+
+  async function saveAppToGithub() {
+    await network(async () => {
+      const c = validateConfig();
+      const key = configKey(c);
+
+      say("GitHubの現在のSHAを確認中…");
+      const remote = await readContents(c, c.appPath);
+
+      if (remote.missing) {
+        if (state.syncKey === key && state.sha) {
+          throw new Error(
+            "前回存在したapp.jsonを取得できません。削除・権限・設定を確認してください。"
+          );
+        }
+
+        if (!confirm(
+          "app.jsonが404でした。未作成のほか、権限・パス・ブランチの問題でも発生します。" +
+          "保存先を確認したうえで新規作成を試みますか？"
+        )) return;
+      } else {
+        if (state.syncKey !== key || !state.sha) {
+          throw new Error(
+            "既存ファイルとの同期基準がありません。端末内データをバックアップし、" +
+            "GitHubから取得して内容を確認してください。"
+          );
+        }
+
+        if (remote.sha !== state.sha) {
+          throw new Error(
+            "SHA競合：GitHub側が変更されています。端末内データをバックアップし、" +
+            "GitHubから再取得してください。"
+          );
+        }
+      }
+
+      const snapshot = JSON.stringify(state.app);
+      const body = {
+        message: "Update medical note",
+        content: encodeBase64UTF8(JSON.stringify(state.app, null, 2)),
+        branch: c.branch
+      };
+
+      if (!remote.missing) body.sha = remote.sha;
+
+      say("GitHubへapp.json全体を送信中…");
+      const newSha = await putContents(c, c.appPath, body);
+
+      const next = clone(state);
+      next.syncKey = key;
+      next.sha = newSha;
+      next.syncedText = snapshot;
+
+      try {
+        persist(next);
+      } catch (_) {
+        throw new Error(
+          "GitHubへのPUTは成功しましたが、同期状態を端末に保存できません。" +
+          "GitHub側を確認し、端末内データを退避してください。"
+        );
+      }
+
+      renderAll();
+      say("GitHubへの同期が完了しました。");
+    });
+  }
+
+  async function loadHealthFromGithub() {
+    await network(async () => {
+      const c = validateConfig();
+
+      if (!confirm(
+        "GitHubのhealth.jsonで端末内の健康データを置き換えますか？"
+      )) return;
+
+      say("GitHubからhealth.jsonを取得中…");
+      const remote = await readContents(c, c.healthPath);
+
+      if (remote.missing) {
+        throw new Error(
+          "health.jsonが見つかりません。パス・ブランチ・権限を確認してください。"
+        );
+      }
+
+      const health = normalizeHealth(JSON.parse(remote.content));
+      const next = clone(state);
+      next.health = health;
+      next.healthFetched = new Date().toLocaleString("ja-JP");
+
+      persist(next);
+      renderAll();
+      say("健康データを取得し、端末内に保存しました。");
+    });
+  }
+
+  function downloadText(filename, text) {
+    const blob = new Blob([text], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  async function readFile(input) {
+    const file = input.files && input.files[0];
+    if (!file) return null;
+
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error("JSONファイルは10MB以下にしてください。");
+    }
+
+    return JSON.parse(await file.text());
+  }
+
+  async function importBackup(event) {
+    const input = event.currentTarget;
+
+    try {
+      if (busy) throw new Error("GitHub通信終了後に復元してください。");
+
+      const data = await readFile(input);
+      if (!data) return;
+
+      if (!isObject(data) || data.format !== "medical-note-backup-v1") {
+        throw new Error("このアプリのバックアップ形式ではありません。");
+      }
+
+      const app = normalizeApp(data.app);
+      const health = normalizeHealth(data.health);
+
+      const description =
+        `通院 ${app.records.length}件、検査値 ${app.vitals.length}件、` +
+        `体重 ${health.weight.length}件、歩数 ${health.steps.length}件、` +
+        `血圧 ${health.bloodPressure.length}件。`;
+
+      if (!confirm(
+        description + "\n現在の端末内データを全置換します。復元しますか？"
+      )) return;
+
+      const next = emptyState();
+      next.app = app;
+      next.health = health;
+      next.healthFetched =
+        typeof data.healthFetched === "string" ? data.healthFetched : null;
+
+      persist(next, true);
+      cancelForms();
+      renderAll();
+      say("バックアップを復元しました。GitHub同期基準は解除されています。");
+    } catch (e) {
+      say(`復元できません：${e.message}`, true);
+    } finally {
+      input.value = "";
+    }
+  }
+
+  async function importHealth(event) {
+    const input = event.currentTarget;
+
+    try {
+      ensureEditable();
+      const data = await readFile(input);
+      if (!data) return;
+
+      const health = normalizeHealth(data);
+
+      if (!confirm(
+        `体重 ${health.weight.length}件、歩数 ${health.steps.length}件、` +
+        `血圧 ${health.bloodPressure.length}件で現在の健康データを置き換えますか？`
+      )) return;
+
+      // ファイル読み込み中に通信が始まった場合も上書きを避ける。
+      ensureEditable();
+
+      const next = clone(state);
+      next.health = health;
+      next.healthFetched = new Date().toLocaleString("ja-JP");
+
+      persist(next);
+      renderAll();
+      say("健康データを端末内に保存しました。");
+    } catch (e) {
+      say(`健康データを読み込めません：${e.message}`, true);
+    } finally {
+      input.value = "";
+    }
+  }
+
+  const guide = `# ヘルスケア自動同期の設定手順
+
+## 共通の前提
+
+- このアプリの端末内データとGitHub上のhealth.jsonは自動では一体化しません。
+- GitHubへ送信後、このアプリの「設定」→「GitHubからhealth.jsonを取得」を実行します。
+- 健康データは非公開リポジトリへの保存を推奨します。
+- PATは対象リポジトリに限定し、Contentsの読み書き権限を付与します。
+- ショートカットにPATを埋め込む場合、共有や画面への露出に注意してください。
+
+health.jsonの例：
+
+\`\`\`json
+{
+  "weight": [{"date": "2026-11-20", "kg": 65.2}],
+  "steps": [{"date": "2026-11-20", "count": 7200}],
+  "bloodPressure": [
+    {"date": "2026-11-20", "systolic": 120, "diastolic": 75}
+  ]
+}
+\`\`\`
+
+## 方式1：素のiOSショートカット
+
+1. ヘルスケアへのアクセスを許可し、体重・歩数などを取得します。
+2. 日付をYYYY-MM-DDに整形し、上記形式のJSON全体を生成します。
+   歩数は日単位の集計方法を決め、体重の複数測定は必要に応じて残します。
+3. 下記GETで既存health.jsonのshaを取得します。
+4. JSON全体をUTF-8でBase64化し、改行のないcontentにします。
+5. message、content、sha、branchを含むJSONをPUTします。
+6. 競合や通信失敗時は、無条件に再PUTせず、内容とshaを再確認します。
+
+### GET
+
+URL:
+https://api.github.com/repos/{owner}/{repo}/contents/data/health.json?ref={branch}
+
+ヘッダ:
+Authorization: Bearer <PAT>
+Accept: application/vnd.github+json
+X-GitHub-Api-Version: 2022-11-28
+
+### PUT
+
+URL:
+https://api.github.com/repos/{owner}/{repo}/contents/data/health.json
+
+ヘッダ:
+Authorization: Bearer <PAT>
+Accept: application/vnd.github+json
+X-GitHub-Api-Version: 2022-11-28
+Content-Type: application/json
+
+本文:
+\`\`\`json
+{
+  "message": "health sync",
+  "content": "<UTF-8 JSON全体のbase64>",
+  "sha": "<GETで取得した現在のsha>",
+  "branch": "main"
+}
+\`\`\`
+
+既存ファイルの更新には現在のshaが必要です。新規作成ではshaを省略します。
+404は未作成だけでなく、権限やパスの問題でも発生します。
+初回は保存先と権限を確認してから作成してください。
+
+ショートカットの具体的なアクション名、自動実行の条件、
+HealthKitの集計結果はiOSバージョンと設定により異なります。
+本手順の実機での動作は未確認です。
+
+## 方式2：Health Auto ExportのREST APIモード
+
+GitHub Contents APIへの直接同期可否は未確認です。
+既存ファイルの更新には、現在のshaの取得、JSON全体のBase64化、
+GitHub指定の本文・認証ヘッダによるPUTが必要です。
+
+利用バージョンがこれらを実行できるか、公式資料と実機で確認してください。
+対応しない場合、この単一HTML構成だけでは直接更新手順を確定できません。
+代替として方式1、またはJSONファイルの手動読み込みを利用してください。
+
+## 注意
+
+GitHubに送ったデータは履歴に残る場合があります。
+公開リポジトリに実データを置かないでください。`;
+
+  document.querySelectorAll(".nav button").forEach(button => {
+    button.addEventListener("click", () => showPage(button.dataset.page));
+  });
+
+  $("new-record").addEventListener("click", () => openRecord());
+  $("cancel-record").addEventListener("click", cancelForms);
+  $("record-form").addEventListener("submit", saveRecord);
+
+  $("new-vital").addEventListener("click", () => openVital());
+  $("cancel-vital").addEventListener("click", cancelForms);
+  $("vital-form").addEventListener("submit", saveVital);
+  $("vital-series").addEventListener("change", renderVitals);
+
+  $("records-list").addEventListener("click", event => {
+    const button = event.target.closest("button");
+    if (!button) return;
+
+    if (button.dataset.editRecord !== undefined) {
+      openRecord(Number(button.dataset.editRecord));
+    } else if (button.dataset.deleteRecord !== undefined) {
+      deleteItem("records", Number(button.dataset.deleteRecord));
+    }
+  });
+
+  $("vitals-list").addEventListener("click", event => {
+    const button = event.target.closest("button");
+    if (!button) return;
+
+    if (button.dataset.editVital !== undefined) {
+      openVital(Number(button.dataset.editVital));
+    } else if (button.dataset.deleteVital !== undefined) {
+      deleteItem("vitals", Number(button.dataset.deleteVital));
+    }
+  });
+
+  $("github-form").addEventListener("submit", saveGithubConfig);
+  $("github-load").addEventListener("click", loadAppFromGithub);
+  $("github-save").addEventListener("click", saveAppToGithub);
+  $("github-health").addEventListener("click", loadHealthFromGithub);
+  $("health-file").addEventListener("change", importHealth);
+  $("backup-file").addEventListener("change", importBackup);
+
+  $("delete-token").addEventListener("click", () => {
+    try {
+      if (busy) throw new Error("通信終了後にPATを削除してください。");
+      saveConfig({ ...config, token: "" });
+      fillConfig();
+      renderSyncStatus();
+      say("保存済みPATを削除しました。GitHub側での失効は別途必要です。");
+    } catch (e) {
+      say(e.message, true);
+    }
+  });
+
+  $("export-backup").addEventListener("click", () => {
+    try {
+      if (!storageReady) {
+        throw new Error("保存済みデータを読み込めないため通常バックアップを作成できません。");
+      }
+
+      const backup = {
+        format: "medical-note-backup-v1",
+        exportedAt: new Date().toISOString(),
+        app: state.app,
+        health: state.health,
+        healthFetched: state.healthFetched
+      };
+
+      downloadText(
+        `medical-note-backup-${localToday()}.json`,
+        JSON.stringify(backup, null, 2)
+      );
+
+      say("書き出しを開始しました。「ファイル」アプリで保存を確認してください。");
+    } catch (e) {
+      say(e.message, true);
+    }
+  });
+
+  $("export-raw").addEventListener("click", () => {
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw === null) throw new Error("保存済みの生データはありません。");
+
+      downloadText(`medical-note-raw-${localToday()}.json`, raw);
+      say("生データの書き出しを開始しました。保存先を確認してください。");
+    } catch (e) {
+      say(e.message, true);
+    }
+  });
+
+  $("guide").textContent = guide;
+  loadInitial();
+  fillConfig();
+  renderAll();
+
+  if (storageReady && $("message").textContent === "読み込み中…") {
+    say("端末内保存モードで利用できます。定期的にバックアップしてください。");
+  }
+})();
+</script>
+</body>
+</html>
